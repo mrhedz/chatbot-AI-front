@@ -1,14 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
+  quickActions: string[];
 }
 
-const quickActions = ["Hola", "Catalogo", "Bebidas", "Botanas", "Cancelar"];
-
-function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
+function ChatInput({
+  onSendMessage,
+  isLoading,
+  quickActions,
+}: ChatInputProps) {
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (isLoading) {
+      setMessage("");
+    }
+  }, [isLoading]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,11 +37,15 @@ function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
       return;
     }
 
-    onSendMessage(value.toLowerCase());
+    onSendMessage(value);
   };
 
   return (
     <div className="chat-input-wrapper">
+      <div className="quick-actions-header">
+        <span className="quick-actions-label">Sugerencias rápidas</span>
+      </div>
+
       <div className="quick-actions">
         {quickActions.map((action) => (
           <button
@@ -51,14 +64,14 @@ function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
         <input
           type="text"
           className="chat-input"
-          placeholder="Escribe 'catalogo' o elige una opción..."
+          placeholder="Pregúntame por productos, recomendaciones o comparativas..."
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           disabled={isLoading}
         />
 
         <button type="submit" className="chat-button" disabled={isLoading}>
-          {isLoading ? "Enviando..." : "Enviar mensaje"}
+          {isLoading ? "Pensando..." : "Enviar"}
         </button>
       </form>
     </div>

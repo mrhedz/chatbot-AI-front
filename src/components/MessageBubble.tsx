@@ -6,11 +6,11 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === "user";
-  const isTyping = message.text === "Escribiendo...";
+  const isTyping = message.text === "__typing__";
 
   return (
     <div className={`message-row ${isUser ? "user" : "bot"}`}>
-      {!isUser && <div className="bot-avatar">AI</div>}
+      {!isUser && <div className={`bot-avatar ${isTyping ? "bot-avatar-glow" : ""}`}>AI</div>}
 
       <div
         className={`message-bubble ${isUser ? "user" : "bot"} ${
@@ -18,7 +18,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
         }`}
       >
         {isTyping ? (
-          <div className="typing-dots">
+          <div className="typing-dots" aria-label="Escribiendo">
             <span />
             <span />
             <span />

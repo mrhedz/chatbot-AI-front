@@ -1,32 +1,52 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import axios from "axios";
 import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
-import type { ChatMessage } from "./types/chat";
+import type { ChatMessage, ChatResponse } from "./types/chat";
 
 const API_URL = import.meta.env.VITE_API_URL;
-const USER_ID = "portfolio-user-1";
+const USER_ID = "portfolio-user-ia";
+
+const INITIAL_QUICK_ACTIONS = [
+  "Quiero una bebida refrescante",
+  "Muéstrame snacks",
+  "¿Qué me recomiendas?",
+  "Busco algo económico",
+];
 
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: crypto.randomUUID(),
-      text: "Hola 👋 Soy tu asistente virtual.",
+      text: "Hola, soy tu asistente inteligente de ventas.",
       sender: "bot",
     },
     {
       id: crypto.randomUUID(),
-      text: "Puedo ayudarte a consultar productos y simular pedidos en segundos.",
-      sender: "bot",
-    },
-    {
-      id: crypto.randomUUID(),
-      text: "Prueba escribiendo 'catalogo' o usa las opciones rápidas 👇",
+      text: "Puedo ayudarte a descubrir productos, comparar opciones y recomendar alternativas según lo que buscas.",
       sender: "bot",
     },
   ]);
 
+  const [quickActions, setQuickActions] = useState<string[]>(
+    INITIAL_QUICK_ACTIONS
+  );
   const [isLoading, setIsLoading] = useState(false);
+
+  const visibleMessages = useMemo(() => {
+    if (!isLoading) {
+      return messages;
+    }
+
+    return [
+      ...messages,
+      {
+        id: "typing-indicator",
+        text: "__typing__",
+        sender: "bot" as const,
+      },
+    ];
+  }, [messages, isLoading]);
 
   const handleSendMessage = async (message: string) => {
     const userMessage: ChatMessage = {
@@ -39,7 +59,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
+      const response = await axios.post<ChatResponse>(
         API_URL,
         { message },
         {
@@ -50,73 +70,93 @@ function App() {
         }
       );
 
+      const botReply =
+        response.data?.botReply ||
+        "No pude generar una respuesta en este momento.";
+
+      const suggestedReplies =
+        response.data?.suggestedReplies?.length
+          ? response.data.suggestedReplies
+          : INITIAL_QUICK_ACTIONS;
+
+      await new Promise((resolve) => setTimeout(resolve, 650));
+
       const botMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        text: response.data.botReply,
+        text: botReply,
         sender: "bot",
       };
 
       setMessages((prev) => [...prev, botMessage]);
+      setQuickActions(suggestedReplies);
     } catch {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+
       const errorMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        text: "Ocurrió un error al conectar con el chatbot.",
+        text: "Ocurrió un problema al conectar con el asistente inteligente.",
         sender: "bot",
       };
 
       setMessages((prev) => [...prev, errorMessage]);
+      setQuickActions(INITIAL_QUICK_ACTIONS);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const visibleMessages = [
-    ...messages,
-    ...(isLoading
-      ? [
-          {
-            id: "typing-indicator",
-            text: "Escribiendo...",
-            sender: "bot" as const,
-          },
-        ]
-      : []),
-  ];
-
   return (
     <main className="app-container">
-      <section className="chat-shell">
-        <div className="chat-hero">
-          <div className="chat-hero-copy">
-            <span className="chat-label">Demo interactiva</span>
-            <h1>Asistente de Ventas</h1>
-            <p>
-              Una experiencia conversacional enfocada en atención, catálogo y
-              simulación de pedidos.
+      <section className="premium-shell">
+        <aside className="premium-sidebar">
+          <div className="premium-sidebar-top">
+            <span className="premium-badge">AI Assistant</span>
+
+            <h1>Chatbot Inteligente para Ventas</h1>
+
+            <p className="premium-description">
+              Una experiencia conversacional premium pensada para recomendar
+              productos, resolver dudas y guiar decisiones de compra con un
+              enfoque mucho más natural y persuasivo.
             </p>
           </div>
 
-          <div className="chat-hero-panel">
-            <div className="hero-stat">
-              <span className="hero-stat-label">Flujo</span>
-              <strong>Guiado</strong>
+          <div className="premium-feature-list">
+            <div className="premium-feature-card">
+              <span className="feature-label">Modo</span>
+              <strong>Conversacional</strong>
             </div>
 
-            <div className="hero-stat">
-              <span className="hero-stat-label">Integración</span>
-              <strong>API lista</strong>
+            <div className="premium-feature-card">
+              <span className="feature-label">Experiencia</span>
+              <strong>UX premium</strong>
             </div>
 
-            <div className="hero-stat">
-              <span className="hero-stat-label">Uso</span>
-              <strong>Ventas</strong>
+            <div className="premium-feature-card">
+              <span className="feature-label">Respuesta</span>
+              <strong>Asistida por IA</strong>
             </div>
           </div>
-        </div>
+        </aside>
 
-        <section className="chat-card">
+        <section className="premium-chat-card">
+          <div className="chat-topbar">
+            <div className="chat-topbar-status">
+              <span className="status-dot" />
+              <span>Asistente activo</span>
+            </div>
+
+            <div className="chat-topbar-copy">
+              Recomendaciones, comparativas y respuestas inteligentes
+            </div>
+          </div>
+
           <ChatWindow messages={visibleMessages} />
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            quickActions={quickActions}
+          />
         </section>
       </section>
     </main>
